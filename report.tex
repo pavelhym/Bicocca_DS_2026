@@ -62,6 +62,10 @@
 
 \maketitle
 
+\centering
+\href{https://github.com/pavelhym/Bicocca_DS_2026}{GitHub Repository: \texttt{https://github.com/pavelhym/Bicocca\_DS\_2026}}
+\vspace{0.5cm}
+
 \begin{abstract}
 This report presents a multiagentic pipeline designed as a financial research automation service for extracting structured information from web sources. The system addresses the critical business need to automate company metric extraction (revenue, market capitalization, employee count, CEO information) while ensuring source credibility and answer completeness. The pipeline employs three distinct LangGraph workflows orchestrated by 9 specialized agents using GPT-4o-mini, GPT-4o, and GPT-5 models. Key innovations include hybrid retrieval combining semantic similarity and credibility scoring ($\alpha = 0.5$), iterative refinement loops ensuring answer completeness, and a user interface supporting both comprehensive search and batch table filling with asynchronous processing. The system is compared against a simpler GPT WebSearch Tool approach, demonstrating superior quality control at the cost of higher latency. The service enables financial analysts to reduce manual research effort by an estimated 80\%, with applications in investment research, due diligence, and competitive intelligence.
 \end{abstract}
@@ -157,7 +161,7 @@ The table graph specializes in structured metric extraction, using the same iter
 
 \subsubsection{Websearch Tool Graph}
 
-The websearch tool graph uses a simplified single-node workflow where the agent has built-in web search capability, eliminating explicit web search nodes and refinement loops. This approach trades some quality control for reduced latency, making it suitable for speed-critical applications. The agent autonomously decides when to perform web searches during the generation process, without explicit quality assessment or iterative refinement. While this reduces average latency compared to the multiagentic workflows, it also results in lower extraction accuracy and citation rates. This graph is recommended for applications where speed is prioritized over comprehensive quality assurance.
+The websearch tool graph is a simplified single-node workflow that directly invokes a GPT-5 Responses model with built-in web search capability (via \texttt{WebSearchTool()}). Unlike the metrics and table graphs, this graph does not implement explicit web search nodes, credibility scoring, hybrid retrieval, or iterative refinement loops. The workflow consists of a single node that calls \texttt{company\_metric\_agent\_with\_websearch}, which is a GPT-5 Responses agent equipped with the \texttt{WebSearchTool()} built-in tool. The agent autonomously decides when and how to perform web searches during the generation process, without any explicit quality assessment, credibility filtering, or answer completeness checks. This approach trades quality control mechanisms for reduced latency, making it suitable for speed-critical applications. While this reduces average latency compared to the multiagentic workflows, it also results in lower extraction accuracy and citation rates. This graph is recommended for applications where speed is prioritized over comprehensive quality assurance.
 
 \subsection{Agent Architecture}
 
@@ -319,36 +323,77 @@ The system follows a state machine pattern implemented through LangGraph, where 
 
 \subsection{Method Comparison and Trade-offs}
 
-\subsubsection{Hybrid Retrieval vs. Pure Semantic Search}
+The system implements two distinct algorithmic approaches for information extraction. This section compares the multiagentic graph approach (used in Metrics Graph and Table Graph) against the websearch tool approach (used in Websearch Tool Graph).
 
-\textbf{Hybrid Retrieval (Our Method)}:
+\subsubsection{Multiagentic Graph Approach: Hybrid Retrieval + Iterative Refinement}
+
+\textbf{Where it's used}: This approach is implemented in the Metrics Graph and Table Graph workflows. Both graphs use the same core algorithms: hybrid retrieval for document ranking and iterative refinement for answer completeness.
+
+\textbf{How it's implemented}: The approach combines two key mechanisms:
+
+\textbf{1. Hybrid Retrieval Algorithm} (implemented in \texttt{retrieve\_with\_credibility()} in \texttt{parsing\_utils.py}):
+\begin{enumerate}
+    \item \textbf{Initial Retrieval}: Retrieves k\_init = 30 documents from the in-memory vector store using semantic similarity search (cosine distance on embeddings from text-embedding-3-small model)
+    \item \textbf{Credibility Scoring}: Documents are scored in parallel using the Web Credibility Grader Agent (GPT-4o) in \texttt{add\_credibility\_web\_search()}, evaluating domain reliability, author expertise, and content recency on a 0.0-1.0 scale
+    \item \textbf{Credibility Filtering}: Documents with credibility scores below min\_credibility = 0.5 are filtered out
+    \item \textbf{Hybrid Scoring}: For each remaining document, a hybrid score is computed as: $(1 - \alpha) \cdot \text{Credibility} + \alpha \cdot (1 - \text{Similarity Distance})$ where $\alpha = 0.5$
+    \item \textbf{Final Selection}: Documents are ranked by hybrid score (descending) and the top k\_final = 15 documents are selected
+\end{enumerate}
+
+\textbf{2. Iterative Refinement Loop} (implemented through LangGraph workflow nodes):
+\begin{enumerate}
+    \item \textbf{Initial Answer Generation}: The \texttt{generate\_answer\_node} (Metrics Graph) or \texttt{generate\_structured\_answer\_node} (Table Graph) generates an answer from retrieved documents
+    \item \textbf{Answer Completeness Check}: The \texttt{full\_answer\_check\_node} uses the Full Information Grader Agent (GPT-5) to assess whether the answer is complete, returning a binary score and optional follow-up question
+    \item \textbf{Conditional Routing}: If the answer is incomplete (binary\_score = False), the workflow routes to \texttt{retries\_increment\_node}
+    \item \textbf{Retry Management}: The \texttt{retries\_increment\_node} increments the retry count and checks if MAX\_RETRIES = 1 has been reached. If not, it routes to \texttt{question\_rewriter\_node}; otherwise, it terminates
+    \item \textbf{Question Rewriting}: The \texttt{question\_rewriter\_node} uses the Question Rewriter Agent (GPT-5) to incorporate the follow-up question into the original query
+    \item \textbf{Additional Search}: The workflow returns to \texttt{web\_search\_node} with the refined query, performs hybrid retrieval again, and regenerates the answer
+\end{enumerate}
+
+\textbf{Trade-offs}:
 \begin{itemize}
-    \item Pros: Filters low-credibility sources, balances relevance and trustworthiness
-    \item Cons: Requires credibility scoring (additional API calls, latency)
-    \item Use case: When source credibility is critical (financial data)
+    \item \textbf{Pros}: 
+    \begin{itemize}
+        \item Filters low-credibility sources before answer generation, ensuring only reliable sources are used
+        \item Balances relevance and trustworthiness through hybrid scoring
+        \item Automatically detects and fills information gaps through iterative refinement
+        \item Ensures comprehensive information gathering even when initial search results are insufficient
+        \item Provides explicit source citations with credibility scores
+    \end{itemize}
+    \item \textbf{Cons}: 
+    \begin{itemize}
+        \item Higher latency due to credibility scoring (parallel GPT-4o API calls for each document), two-stage retrieval process, and potential iterative refinement loops
+        \item More complex workflow with multiple nodes and conditional routing
+        \item Additional API costs from multiple agent invocations (credibility grading, answer grading, question rewriting)
+    \end{itemize}
+    \item \textbf{Use case}: Quality-critical financial research applications where source credibility and answer completeness are essential, even at the cost of higher latency
 \end{itemize}
 
-\textbf{Pure Semantic Search}:
-\begin{itemize}
-    \item Pros: Lower latency, simpler implementation
-    \item Cons: May retrieve unreliable sources, no credibility filtering
-    \item Use case: When all sources are equally trustworthy
-\end{itemize}
+\subsubsection{Websearch Tool Approach: Single-Pass Generation}
 
-\subsubsection{Iterative Refinement vs. Single-Pass Generation}
+\textbf{Where it's used}: This approach is implemented exclusively in the Websearch Tool Graph.
 
-\textbf{Iterative Refinement (Our Method)}:
-\begin{itemize}
-    \item Pros: Improves answer completeness, handles information gaps
-    \item Cons: Higher latency (2x API calls in worst case), more complex
-    \item Use case: When answer completeness is critical
-\end{itemize}
+\textbf{How it's implemented}: The Websearch Tool Graph consists of a single node (\texttt{generate\_structured\_answer\_node}) that directly invokes \texttt{company\_metric\_agent\_with\_websearch}. This agent is a GPT-5 Responses model with \texttt{WebSearchTool()} as a built-in tool. The workflow is: START $\rightarrow$ generate\_structured\_answer\_node $\rightarrow$ END.
 
-\textbf{Single-Pass Generation}:
+The agent autonomously decides when and how to perform web searches during the generation process. There are no explicit quality control mechanisms: no credibility scoring, no hybrid retrieval, no answer completeness checks, and no iterative refinement loops. The model relies entirely on its built-in web search capability and implicit judgment for source selection and answer generation.
+
+\textbf{Trade-offs}:
 \begin{itemize}
-    \item Pros: Lower latency, simpler workflow
-    \item Cons: May miss information, no quality feedback loop
-    \item Use case: When speed is prioritized over completeness
+    \item \textbf{Pros}: 
+    \begin{itemize}
+        \item Lower latency (single agent invocation, no multi-stage processing)
+        \item Simpler workflow (one node, no conditional routing)
+        \item Faster response times suitable for real-time applications
+        \item Lower API costs (fewer agent invocations)
+    \end{itemize}
+    \item \textbf{Cons}: 
+    \begin{itemize}
+        \item No explicit credibility filtering (relies on model's implicit judgment, which may not prioritize source reliability)
+        \item No iterative refinement (may miss information if initial search is insufficient)
+        \item No explicit quality assessment loop (no automatic detection of incomplete answers)
+        \item Lower citation rates compared to multiagentic approach (though extraction accuracy is higher)
+    \end{itemize}
+    \item \textbf{Use case}: Speed-critical applications where moderate accuracy is acceptable and comprehensive quality assurance is not required
 \end{itemize}
 
 \subsubsection{Three Graph Variants}
@@ -359,8 +404,10 @@ The system follows a state machine pattern implemented through LangGraph, where 
 \toprule
 \textbf{Feature} & \textbf{Metrics Graph} & \textbf{Table Graph} & \textbf{Websearch Tool Graph} \\
 \midrule
+Hybrid Retrieval & Yes & Yes & No \\
+Credibility Scoring & Yes & Yes & No \\
 Iterative Refinement & Yes & Yes & No \\
-Web Search Node & Explicit & Explicit & Built-in tool \\
+Web Search Node & Explicit (Exa API) & Explicit (Exa API) & Built-in tool (GPT WebSearch) \\
 Structured Output & No & Yes & Yes \\
 Answer Grading & Yes & Yes & No \\
 Question Rewriting & Yes & Yes & No \\
@@ -369,7 +416,7 @@ Latency (estimated) & High & High & Medium \\
 Use Case & General Q\&A & Metric Extraction & Simple Extraction \\
 \bottomrule
 \end{tabular}
-\caption{Comparison of Graph Workflow Features. Metrics Graph and Table Graph have similar latency due to iterative refinement. Websearch Tool Graph has lower latency but no quality control loop.}
+\caption{Comparison of Graph Workflow Features. Metrics Graph and Table Graph implement hybrid retrieval, credibility scoring, and iterative refinement. Websearch Tool Graph uses single-pass generation with built-in web search tool, resulting in lower latency but no explicit quality control mechanisms.}
 \end{table}
 
 \section{Service Design and Real-World Application}
@@ -451,7 +498,7 @@ Hybrid Retrieval & Semantic + Credibility ranking & Semantic only \\
 Iterative Refinement & Yes (max 1 retry) & No \\
 Answer Quality Control & Explicit grading agents & Model-dependent \\
 Latency (avg, seconds) & Higher (Metrics/Table Graph) & Lower (Websearch Tool Graph) \\
-Extraction Accuracy & Higher (Table Graph) & Moderate (Websearch Tool Graph) \\
+Extraction Accuracy & Moderate (Table Graph) & Higher (Websearch Tool Graph) \\
 Citation Rate & Complete (Metrics/Table Graph) & High (Websearch Tool Graph) \\
 Source Verification & Explicit credibility filtering & No explicit filtering \\
 Use Case & Quality-critical applications & Speed-critical applications \\
@@ -534,7 +581,7 @@ The multiagentic pipeline provides superior quality control compared to simpler 
     \item \textbf{Explicit Quality Control}: Multi-agent architecture with dedicated grading agents provides explicit quality assurance, compared to implicit model-dependent quality in single-agent approaches
     \item \textbf{Credibility Filtering}: Systematic credibility scoring and filtering ensures only reliable sources are used, critical for financial research
     \item \textbf{Iterative Improvement}: Refinement loops automatically improve answer completeness, while single-pass approaches may miss information
-    \item \textbf{Trade-offs}: Multiagentic approach prioritizes quality (higher accuracy, complete citations) over speed, while GPT WebSearch Tool prioritizes speed with acceptable quality
+    \item \textbf{Trade-offs}: Multiagentic approach prioritizes source credibility and complete citations over speed, while GPT WebSearch Tool achieves higher extraction accuracy and faster response times
 \end{enumerate}
 
 \subsection{Real-World Impact}
@@ -554,11 +601,19 @@ The service design enables several practical applications:
     \item \textbf{Retry Limit}: Maximum 1 retry may be insufficient for complex queries; adaptive retry limits based on query complexity could improve completeness
     \item \textbf{Vector Store}: In-memory stores are recreated per query; persistent stores with caching could reduce latency
     \item \textbf{Source Diversity}: Current implementation focuses on web sources; integration with proprietary databases and financial APIs could improve accuracy
+    \item \textbf{Web Search API Limitations}: Current implementation uses Exa Search API with limited resources; upgrading to a paid API tier with more resources (higher rate limits, more results per query, advanced filtering options) could improve search quality and reduce rate limiting issues
+    \item \textbf{Webpage Scraping}: Current implementation relies on API-provided content snippets; improving information scraping to extract full webpage content (including dynamic content, tables, and structured data) would provide more comprehensive source material for answer generation
+    \item \textbf{Chunking Strategy}: Current chunking uses RecursiveCharacterTextSplitter with fixed parameters; developing domain-specific chunking strategies (e.g., preserving financial tables, maintaining paragraph coherence, handling multi-column layouts) could improve retrieval quality and reduce information fragmentation
+    \item \textbf{Deep Research Agent}: Creating a specialized deep research agent that can chain multiple tool calls iteratively, retrieving and analyzing document chunks as long as needed until sufficient information is gathered, rather than limiting to a single retrieval pass. This would enable more thorough investigation of complex queries
+    \item \textbf{Persistent Vector Store}: Implementing a static/persistent vector store that saves parsed webpages and their embeddings, avoiding redundant parsing and embedding computation for previously retrieved documents. This would significantly improve efficiency for repeated queries and reduce API costs
+    \item \textbf{External Data Sources}: Adding integration with external non-web information sources (proprietary financial databases, internal company databases, subscription-based data services, APIs from financial data providers) when web sources are insufficient or when higher-quality structured data is required
 \end{enumerate}
 
 \subsection{Final Assessment}
 
-The multiagentic pipeline successfully transforms financial research from a manual, time-intensive process into an automated service that maintains high standards for source credibility and answer completeness. The hybrid retrieval mechanism effectively balances relevance and trustworthiness, while iterative refinement ensures comprehensive information gathering. The service design with dual interaction modes (comprehensive search and batch table filling) addresses diverse use cases from detailed research to bulk data extraction. The comparison with simpler approaches demonstrates that the multiagentic architecture provides superior quality control at the cost of higher latency, making it ideal for quality-critical financial research applications.
+The multiagentic pipeline successfully transforms financial research from a manual, time-intensive process into an automated service that maintains high standards for source credibility and answer completeness. The hybrid retrieval mechanism effectively balances relevance and trustworthiness, while iterative refinement ensures comprehensive information gathering. The service design with dual interaction modes (comprehensive search and batch table filling) addresses diverse use cases from detailed research to bulk data extraction. However, experimental evaluation revealed that the websearch tool approach achieved higher extraction accuracy compared to the custom multiagentic pipeline, demonstrating that more sophisticated architectures do not always translate to better performance on accuracy metrics.
+
+Despite the accuracy advantage of the websearch tool approach, the custom multiagentic architecture offers significant strategic benefits that extend beyond raw accuracy metrics. First, the custom approach provides full control over document retrieval and processing pipelines, enabling integration of proprietary and closed data sources (internal databases, subscription services, confidential documents) that cannot be accessed through websearch tools. In websearch tool-based solutions, there is no control over which pages are scraped, and custom or closed data cannot be integrated. Second, websearch tools are not universally available across all LLM providers, and for regulated industries such as banking and financial services, using external cloud-based LLMs like GPT may violate compliance requirements. The custom multiagentic architecture can be deployed with self-hosted LLMs, ensuring data privacy and regulatory compliance while maintaining the same sophisticated workflow capabilities. Third, the modular agentic flow enables unlimited customization possibilities: specialized agents can be added for domain-specific tasks, custom retrieval strategies can be implemented, and the entire pipeline can be adapted to specific organizational needs. Finally, a hybrid approach is possible: combining GPT with websearch tool for initial information gathering (leveraging its accuracy advantage), followed by the multiagentic workflow for credibility assessment, hybrid retrieval, and iterative refinement to prevent hallucinations and ensure source verification. This hybrid strategy leverages the accuracy and speed of websearch tools while maintaining the quality control and hallucination prevention mechanisms of the multiagentic pipeline, offering the best of both approaches.
 
 
 \end{document}
