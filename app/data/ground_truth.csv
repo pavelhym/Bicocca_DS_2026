@@ -1,0 +1,21 @@
+company,ticker,country,revenue,gross_margin,ceo,size
+Adyen,ADYEN.AS,Netherlands,2225601000,0.8931,"Pieter van der Does, Ingo Uytdehaage",small
+Ahold Delhaize,AD.AS,Netherlands,89356000000,0.2664,Frans Muller,small
+Allianz,ALV.DE,Germany,97675000000,,Oliver Bäte,big
+Banco Santander,SAN.MC,Spain,61876000000,,Héctor Grisi Checa,big
+BMW Group,BMW.DE,Germany,1.4238E+11,0.1608,Oliver Zipse,big
+Delivery Hero,DHER.DE,Germany,12294700000,0.2708,Niklas Östberg,small
+Enel,ENEL.MI,Italy,73914000000,0.5567,Flavio Cattaneo,big
+Fraport,FRA.DE,Germany,4427000000,0.5818,Stefan Schulte,small
+HelloFresh,HFG.DE,Germany,7661300000,0.6237,Dominik Richter,small
+HSBC,HSBA.L,United Kingdom,65900000000,,Georges Elhedery,big
+Leonardo,LDO.MI,Italy,17763000000,0.1124,Roberto Cingolani,small
+LVMH,MC.PA,France,84682000000,0.6703,Bernard Arnault,big
+Orange Group,ORA.PA,France,40260000000,0.5554,Christel Heydemann,small
+Publicis Groupe,PUB.PA,France,16030000000,0.4246,Arthur Sadoun,small
+Siemens,SIE.DE,Germany,75930000000,0.3928,Roland Busch,big
+Telefónica,TEF.MC,Spain,41315000000,0.6762,José María Álvarez?Pallete,small
+TotalEnergies,TTE.PA,France,1.9561E+11,0.3474,Patrick Pouyanné,big
+Unilever,ULVR.L,United Kingdom,60761000000,0.4505,Hein Schumacher,big
+Volkswagen Group,VOW3.DE,Germany,3.24656E+11,0.1832,Oliver Blume,big
+Zalando,ZAL.DE,Germany,10572500000,0.4069,"Robert Gentz, David Schröder",small

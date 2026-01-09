@@ -1,0 +1,21 @@
+Company,Ticker,country,city,employees,revenue,market_cap,ceo,error,size
+HelloFresh,HFG.DE,Germany,Berlin,21783,7020299776,934806272,CEO,,small
+Fraport,FRA.DE,Germany,Frankfurt am Main,19843,4444000256,6435057152,chief executive officer|CEO,,small
+Zalando,ZAL.DE,Germany,Berlin,16117,11574599680,6529229312,,,small
+Delivery Hero,DHER.DE,Germany,Berlin,43986,13401900032,6645038080,,no CEO info,small
+Telefónica,TEF.MC,Spain,Madrid,100870,41620000768,19604779008,Marc Murtra,,small
+Publicis Groupe,PUB.PA,France,Paris,111850,16862999552,22398087168,Arthur Sadoun,,small
+Leonardo (company),LDO.MI,Italy,Rome,62012,19131000832,27973961728,chairman,,small
+Ahold Delhaize,AD.AS,Netherlands,Zaandam,390000,92137996288,30924240896,Frans Muller,,small
+Orange Group,ORA.PA,France,Issy-les-Moulineaux,126909,40274001920,37526134784,Christel Heydemann,,small
+Adyen,ADYEN.AS,Netherlands,Amsterdam,4568,2191802880,43338702848,Chief executive officer|CEO,,small
+Volkswagen Group,VOW3.DE,Germany,Wolfsburg,632552,326045990912,52533366784,"Hans Dieter Pötsch, Oliver Blume",,big
+BMW Group,BMW.DE,Germany,Munich,157457,136415002624,57018847232,Oliver Zipse,,big
+Enel,ENEL.MI,Italy,Rome,61192,77777002496,88621367296,Paolo Scaroni,,big
+Unilever,ULVR.L,United Kingdom,London,115964,59770998784,105981558784,Fernando Fernández (executive)|Fernando Fernández,,big
+TotalEnergies,TTE.PA,France,Courbevoie,95393,183533993984,120132599808,Patrick Pouyanné,,big
+Banco Santander,SAN.MC,Spain,Madrid,204770,50673999872,146380537856,Ana Botín|Ana Patricia Botín,,big
+Allianz,ALV.DE,Germany,Munich,156626,105018998784,149902344192,Oliver Bäte,,big
+Siemens,SIE.DE,Germany,Munich,303061,78914002944,185661702144,Roland Busch,,big
+HSBC,HSBA.L,United Kingdom,London,212409,57976000512,200154791936,"Chairman|Group Chairman, Georges Elhedery, Chief executive officer|Group Chief Executive",,big
+LVMH,MC.PA,France,Paris,200518,82816000000,314325598208,Bernard Arnault,,big

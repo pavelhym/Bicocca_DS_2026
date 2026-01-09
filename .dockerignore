@@ -1,0 +1,16 @@
+storage_chroma_copy/
+storage/
+storage_chroma/
+testing_notebooks/
+storage_chroma_gemini/
+storage_small_testing/
+storage/
+testing_notebooks/
+rags/notebooks_test/
+parser/
+.venv
+main_testing_always_web.ipynb
+main_testing_table_input.ipynb
+test.py
+testing_notebooks/
+parser/

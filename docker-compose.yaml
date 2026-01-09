@@ -1,0 +1,18 @@
+name: bank_rag
+
+services:
+  bank_rag:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    ports:
+      - "8502:8502"
+    volumes:
+      - ./streamlit_utils/data:/app/streamlit_utils/data
+      - ./Log/logs:/app/Log/logs
+      - ./storage:/app/storage
+      - ./temp_storage:/app/temp_storage
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+  
+    restart: always
