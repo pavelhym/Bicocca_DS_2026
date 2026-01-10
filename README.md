@@ -130,10 +130,12 @@ The application will open in your default web browser at `http://localhost:8501`
 
 ### Programmatic Usage
 
+When running from the `app/` directory, use relative imports:
+
 #### Using Metrics Graph
 
 ```python
-from app.graphs.metrics_graph import websearch_graph
+from graphs.metrics_graph import websearch_graph
 
 config = {"configurable": {"thread_id": "unique_thread_id"}}
 result = await websearch_graph.ainvoke(
@@ -148,7 +150,7 @@ print(result["documents"])   # Retrieved documents
 #### Using Table Graph
 
 ```python
-from app.graphs.table_graph import one_metrics_graph
+from graphs.table_graph import one_metrics_graph
 
 config = {"configurable": {"thread_id": "unique_thread_id"}}
 result = await one_metrics_graph.ainvoke(
@@ -166,8 +168,8 @@ print(result["generation"]["comment"])  # Source citations
 #### Batch Processing
 
 ```python
-from app.src.utils import process_lists
-from app.graphs.table_graph import one_metrics_graph
+from src.utils import process_lists
+from graphs.table_graph import one_metrics_graph
 
 companies = ["Volkswagen Group", "BMW Group", "Siemens"]
 metrics = ["revenue", "market_cap", "employees"]
@@ -175,6 +177,8 @@ metrics = ["revenue", "market_cap", "employees"]
 results = await process_lists(companies, metrics, one_metrics_graph)
 # Results contain all company-metric combinations
 ```
+
+**Note**: If running from the project root, use `app.graphs` and `app.src` instead (e.g., `from app.graphs.metrics_graph import websearch_graph`).
 
 ## System Parameters
 
@@ -190,11 +194,22 @@ Default system parameters:
 - **Embedding Model**: text-embedding-3-small
 - **Temperature**: 0.0 (for all models, ensuring deterministic outputs)
 
+## Experiments and Evaluation
+
+The `app/testing_notebooks/experiments.ipynb` notebook is a central component of the project, containing comprehensive experiments and evaluations of the system. This notebook includes:
+
+- **Search Engine Quality Assessment**: Evaluation of 10 different search engines (Brave, DuckDuckGo, Exa, Google, Google Serper, Jina, SearchAPI, SerpAPI, Tavily, You) for CEO, revenue, and gross margin queries
+- **Performance Metrics**: Analysis of correctness scores and coverage metrics for both large and small companies
+- **Correlation Analysis**: PhiK correlation analysis between search engines to identify clustering patterns
+- **Approach Comparison**: Direct comparison between the Multiagentic Pipeline and GPT WebSearch Tool approaches across different query types and company sizes
+- **Data Processing**: Functions for merging and processing search results from multiple sources
+
+The experiments notebook provides the foundation for the results presented in the LaTeX report (`report.tex`) and is essential for understanding the system's performance characteristics.
+
 ## Testing
 
-The system includes testing notebooks in `app/testing_notebooks/`:
+Additional testing notebooks in `app/testing_notebooks/`:
 
-- `experiments.ipynb`: Main experiments and evaluation notebooks
 - `websearch_agent.ipynb`: Testing web search agents
 - `search_results_receiving.ipynb`: Testing search result processing
 - `table_filling_experiment.ipynb`: Testing table filling functionality
@@ -221,10 +236,15 @@ Bicocca_DS_2026/
 │   │   ├── european_company_metrics_2025.csv
 │   │   └── ground_truth.csv
 │   ├── logs/                # Application logs
-│   ├── testing_notebooks/   # Jupyter notebooks for testing
-│   │   ├── archive/         # Archived notebooks and data
+│   ├── testing_notebooks/   # Jupyter notebooks for testing and experiments
+│   │   ├── experiments.ipynb    # Main experiments and evaluation notebook (IMPORTANT)
 │   │   ├── data/            # Test data files
-│   │   └── data_old/        # Old test data files
+│   │   ├── websearch_agent.ipynb
+│   │   ├── search_results_receiving.ipynb
+│   │   ├── table_filling_experiment.ipynb
+│   │   ├── table_input_agent.ipynb
+│   │   ├── test_agent.ipynb
+│   │   └── archive/         # Archived notebooks and data
 │   └── streamlit_app.py     # Streamlit web interface
 ├── figures/                 # Documentation figures
 │   ├── ceo_quality.png
@@ -234,8 +254,6 @@ Bicocca_DS_2026/
 │   ├── gross_margin_quality.png
 │   ├── gross_margin_correlation.png
 │   └── websearch_graph.png
-├── parser/                  # Search engine parsers
-│   └── search_engines/
 ├── storage/                 # Temporary storage
 ├── temp_storage/            # Temporary file storage
 ├── main.py                  # Main entry point
@@ -324,7 +342,8 @@ docker run -p 8501:8501 streamlit-app
 ### Getting Help
 
 - Check the logs in `app/logs/` for detailed error messages
-- Review the testing notebooks in `app/testing_notebooks/` for usage examples
+- Review the experiments notebook (`app/testing_notebooks/experiments.ipynb`) for comprehensive evaluation results and data processing examples
+- Review other testing notebooks in `app/testing_notebooks/` for usage examples
 - Consult the LaTeX report (`report.tex`) for detailed system documentation
 
 ## Limitations
