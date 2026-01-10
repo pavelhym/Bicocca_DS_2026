@@ -1,8 +1,8 @@
-# Bank RAG - Multiagentic Pipeline for Financial Document Parsing
+# Multiagentic Pipeline for Financial Document Parsing
 
 A sophisticated multiagentic pipeline designed for automated financial research and company metric extraction. The system employs specialized AI agents orchestrated through LangGraph workflows to extract structured information from web sources while ensuring source credibility and answer completeness.
 
-## 🎯 Features
+## Features
 
 - **Multi-Agent Architecture**: 9 specialized agents working together to handle different aspects of information extraction
 - **Hybrid Retrieval**: Combines semantic similarity and credibility scoring for optimal document ranking
@@ -14,7 +14,7 @@ A sophisticated multiagentic pipeline designed for automated financial research 
 - **Structured Outputs**: Extracts company metrics (revenue, market cap, employees, CEO) with explicit source citations
 - **Web Interface**: Streamlit-based UI for easy interaction
 
-## 🏗️ Architecture
+## Architecture
 
 The system consists of three main layers:
 
@@ -28,19 +28,19 @@ The system consists of three main layers:
 - **Table Graph**: Structured metric extraction optimized for batch processing
 - **Websearch Tool Graph**: Simplified workflow for speed-critical applications
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Python >= 3.13
 - OpenAI API key
 - Exa Search API key
 - ScrapingAnt API key (optional, for web scraping fallback)
 
-## 🚀 Installation
+## Installation
 
 1. **Clone the repository**:
    ```bash
    git clone <repository-url>
-   cd Bank_RAG
+   cd Bicocca_DS_2026
    ```
 
 2. **Install dependencies**:
@@ -57,19 +57,14 @@ The system consists of three main layers:
 
 3. **Set up environment variables**:
    
-   Copy the example environment file:
-   ```bash
-   cp .env_example .env
-   ```
-   
-   Edit `.env` and add your API keys:
+   Create a `.env` file in the project root:
    ```env
    OPENAI_API_KEY=your_openai_api_key_here
    EXA_API_KEY=your_exa_api_key_here
    SCRAPER_ANT_API_KEY=your_scrapingant_api_key_here  # Optional
    ```
 
-## 🔑 API Keys
+## API Keys
 
 ### Required
 
@@ -87,11 +82,17 @@ The system consists of three main layers:
   - Used as fallback for web scraping when direct URL access fails
   - System will work without this, but may have reduced reliability for some web sources
 
-## 💻 Usage
+## Usage
 
 ### Running the Streamlit Application
 
-Navigate to the `app` directory and run:
+From the project root, run:
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+Or navigate to the `app` directory:
 
 ```bash
 cd app
@@ -132,7 +133,7 @@ The application will open in your default web browser at `http://localhost:8501`
 #### Using Metrics Graph
 
 ```python
-from graphs.metrics_graph import websearch_graph
+from app.graphs.metrics_graph import websearch_graph
 
 config = {"configurable": {"thread_id": "unique_thread_id"}}
 result = await websearch_graph.ainvoke(
@@ -147,7 +148,7 @@ print(result["documents"])   # Retrieved documents
 #### Using Table Graph
 
 ```python
-from graphs.table_graph import one_metrics_graph
+from app.graphs.table_graph import one_metrics_graph
 
 config = {"configurable": {"thread_id": "unique_thread_id"}}
 result = await one_metrics_graph.ainvoke(
@@ -165,8 +166,8 @@ print(result["generation"]["comment"])  # Source citations
 #### Batch Processing
 
 ```python
-from src.utils import process_lists
-from graphs.table_graph import one_metrics_graph
+from app.src.utils import process_lists
+from app.graphs.table_graph import one_metrics_graph
 
 companies = ["Volkswagen Group", "BMW Group", "Siemens"]
 metrics = ["revenue", "market_cap", "employees"]
@@ -175,7 +176,7 @@ results = await process_lists(companies, metrics, one_metrics_graph)
 # Results contain all company-metric combinations
 ```
 
-## 📊 System Parameters
+## System Parameters
 
 Default system parameters:
 
@@ -189,19 +190,22 @@ Default system parameters:
 - **Embedding Model**: text-embedding-3-small
 - **Temperature**: 0.0 (for all models, ensuring deterministic outputs)
 
-## 🧪 Testing
+## Testing
 
 The system includes testing notebooks in `app/testing_notebooks/`:
 
-- `gpt_websearch.ipynb`: Testing GPT WebSearch Tool approach
-- `table_filling_experiment.ipynb`: Testing table filling functionality
+- `experiments.ipynb`: Main experiments and evaluation notebooks
 - `websearch_agent.ipynb`: Testing web search agents
 - `search_results_receiving.ipynb`: Testing search result processing
+- `table_filling_experiment.ipynb`: Testing table filling functionality
+- `table_input_agent.ipynb`: Testing table input agent
+- `test_agent.ipynb`: Testing agent functionality
+- `archive/`: Archived notebooks and data files
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-Bank_RAG/
+Bicocca_DS_2026/
 ├── app/
 │   ├── graphs/              # LangGraph workflow definitions
 │   │   ├── metrics_graph.py
@@ -211,20 +215,40 @@ Bank_RAG/
 │   │   ├── agents.py        # AI agent definitions
 │   │   ├── parsing_utils.py # Document parsing and retrieval
 │   │   ├── utils.py         # Utility functions
-│   │   └── logger_initialization.py
+│   │   ├── logger_initialization.py
+│   │   └── style.css        # Streamlit styling
 │   ├── data/                # Dataset files
-│   │   └── european_company_metrics_2025.csv
+│   │   ├── european_company_metrics_2025.csv
+│   │   └── ground_truth.csv
+│   ├── logs/                # Application logs
 │   ├── testing_notebooks/   # Jupyter notebooks for testing
+│   │   ├── archive/         # Archived notebooks and data
+│   │   ├── data/            # Test data files
+│   │   └── data_old/        # Old test data files
 │   └── streamlit_app.py     # Streamlit web interface
 ├── figures/                 # Documentation figures
+│   ├── ceo_quality.png
+│   ├── ceo_correlation.png
+│   ├── revenue_quality.png
+│   ├── revenue_correlation.png
+│   ├── gross_margin_quality.png
+│   ├── gross_margin_correlation.png
 │   └── websearch_graph.png
+├── parser/                  # Search engine parsers
+│   └── search_engines/
+├── storage/                 # Temporary storage
+├── temp_storage/            # Temporary file storage
+├── main.py                  # Main entry point
+├── streamlit_app.py         # Root-level Streamlit app (alternative entry)
 ├── report.tex              # LaTeX report
 ├── requirements.txt        # Python dependencies
 ├── pyproject.toml         # Project configuration
+├── docker-compose.yaml    # Docker Compose configuration
+├── Dockerfile.streamlit   # Dockerfile for Streamlit
 └── README.md              # This file
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### Model Selection
 
@@ -253,7 +277,7 @@ Hybrid Score = (1 - α) × Credibility + α × (1 - Similarity Distance)
 
 Where α = 0.5 (equal weighting)
 
-## 📝 Logging
+## Logging
 
 Logs are stored in `app/logs/` with daily rotation. Each component has its own log file:
 
@@ -261,8 +285,23 @@ Logs are stored in `app/logs/` with daily rotation. Each component has its own l
 - `parsing_utils_*.log`: Document parsing logs
 - `streamlit_app_*.log`: Web interface logs
 - `table_graph_*.log`: Table graph execution logs
+- `utils_*.log`: Utility function logs
+- `websearch_tool_graph_*.log`: Websearch tool graph logs
 
-## 🐛 Troubleshooting
+## Docker Support
+
+The project includes Docker support for containerized deployment:
+
+```bash
+# Build and run with Docker Compose
+docker-compose up --build
+
+# Or build the Streamlit image directly
+docker build -f Dockerfile.streamlit -t streamlit-app .
+docker run -p 8501:8501 streamlit-app
+```
+
+## Troubleshooting
 
 ### Common Issues
 
@@ -271,8 +310,8 @@ Logs are stored in `app/logs/` with daily rotation. Each component has its own l
    - Check that keys are valid and have sufficient credits
 
 2. **Import Errors**:
-   - Make sure you're running from the `app` directory or have the project root in your Python path
-   - Verify all dependencies are installed: `pip install -r requirements.txt`
+   - Make sure you're running from the project root or have the project in your Python path
+   - Verify all dependencies are installed: `pip install -r requirements.txt` or `uv sync`
 
 3. **Streamlit Issues**:
    - Clear Streamlit cache: `streamlit cache clear`
@@ -285,21 +324,20 @@ Logs are stored in `app/logs/` with daily rotation. Each component has its own l
 ### Getting Help
 
 - Check the logs in `app/logs/` for detailed error messages
-- Review the testing notebooks for usage examples
+- Review the testing notebooks in `app/testing_notebooks/` for usage examples
 - Consult the LaTeX report (`report.tex`) for detailed system documentation
 
-## 🚧 Limitations
+## Limitations
 
 - Average latency may be prohibitive for real-time applications
 - Maximum 1 retry per query (configurable via MAX_RETRIES)
 - In-memory vector stores are recreated per query (no persistence)
 - Focuses primarily on web sources (proprietary databases not integrated)
 
-## 🔮 Future Enhancements
+## Future Enhancements
 
 - Persistent vector stores with caching
 - Integration with proprietary financial databases
 - Adaptive retry limits based on query complexity
 - Streaming responses for long-form answers
 - Custom embeddings fine-tuned for financial domain
-
