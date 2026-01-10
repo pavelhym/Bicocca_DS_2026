@@ -1,0 +1,21 @@
+company,ticker,country,revenue,gross_margin,ceo,size
+Adyen,ADYEN.AS,Netherlands,1 996 100 000,0.8931,"Pieter van der Does, Ingo Uytdehaage",small
+Ahold Delhaize,AD.AS,Netherlands,89 356 000 000,0.2664,Frans Muller,small
+Allianz,ALV.DE,Germany,97 675 000 000,,Oliver Bäte,large
+Banco Santander,SAN.MC,Spain,61 876 000 000,,Héctor Grisi Checa,large
+BMW Group,BMW.DE,Germany,142 380 000 000,0.1608,Oliver Zipse,large
+Delivery Hero,DHER.DE,Germany,12 294 700 000,0.2708,Niklas Östberg,small
+Enel,ENEL.MI,Italy,78 947 000 000,0.299,Flavio Cattaneo,large
+Fraport,FRA.DE,Germany,4 427 000 000,0.5818,Stefan Schulte,small
+HelloFresh,HFG.DE,Germany,7 661 300 000,0.6237,Dominik Richter,small
+HSBC,HSBA.L,United Kingdom,65 900 000 000,,Georges Elhedery,large
+Leonardo,LDO.MI,Italy,17 763 000 000,0.1124,Roberto Cingolani,small
+LVMH,MC.PA,France,84 682 000 000,0.6703,Bernard Arnault,large
+Orange Group,ORA.PA,France,40 260 000 000,0.5554,Christel Heydemann,small
+Publicis Groupe,PUB.PA,France,16 030 000 000,0.4246,Arthur Sadoun,small
+Siemens,SIE.DE,Germany,75 930 000 000,0.3928,Roland Busch,large
+Telefónica,TEF.MC,Spain,41 315 000 000,0.6762,José María Álvarez Pallete,small
+TotalEnergies,TTE.PA,France,195 610 000 000,0.3474,Patrick Pouyanné,large
+Unilever,ULVR.L,United Kingdom,60 761 000 000,0.4505,Hein Schumacher,large
+Volkswagen Group,VOW3.DE,Germany,324 656 000 000,0.1832,Oliver Blume,large
+Zalando,ZAL.DE,Germany,10 572 500 000,0.4069,"Robert Gentz, David Schröder",small

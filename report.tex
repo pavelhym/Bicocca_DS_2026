@@ -15,6 +15,7 @@
 \usepackage{tikz}
 \usepackage{fancyhdr}
 \usepackage{lastpage}
+\usepackage{titlesec}
 \usetikzlibrary{shapes,arrows,positioning,decorations.pathreplacing}
 
 % Page setup
@@ -25,6 +26,28 @@
 \fancyfoot[C]{\thepage\ of \pageref{LastPage}}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0.4pt}
+
+% Section formatting - left align all section headers
+\titleformat{\section}
+  {\normalfont\Large\bfseries\raggedright}
+  {\thesection}
+  {1em}
+  {}
+\titlespacing*{\section}{0pt}{3.5ex plus 1ex minus .2ex}{2.3ex plus .2ex}
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\raggedright}
+  {\thesubsection}
+  {1em}
+  {}
+\titlespacing*{\subsection}{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\raggedright}
+  {\thesubsubsection}
+  {1em}
+  {}
+\titlespacing*{\subsubsection}{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
 
 \hypersetup{
     colorlinks=true,
@@ -56,7 +79,6 @@
 \title{Multiagentic Pipeline for Document Parsing and Output Generation\\
 \large A Quantitative Analysis of Financial Document Processing}
 \author{Pavel Shumkovskii}
-\date{\today}
 
 \begin{document}
 
@@ -66,6 +88,7 @@
 \href{https://github.com/pavelhym/Bicocca_DS_2026}{GitHub Repository: \texttt{https://github.com/pavelhym/Bicocca\_DS\_2026}}
 \vspace{0.5cm}
 
+\raggedright
 \begin{abstract}
 This report presents a multiagentic pipeline designed as a financial research automation service for extracting structured information from web sources. The system addresses the critical business need to automate company metric extraction (revenue, market capitalization, employee count, CEO information) while ensuring source credibility and answer completeness. The pipeline employs three distinct LangGraph workflows orchestrated by 9 specialized agents using GPT-4o-mini, GPT-4o, and GPT-5 models. Key innovations include hybrid retrieval combining semantic similarity and credibility scoring ($\alpha = 0.5$), iterative refinement loops ensuring answer completeness, and a user interface supporting both comprehensive search and batch table filling with asynchronous processing. The system is compared against a simpler GPT WebSearch Tool approach, demonstrating superior quality control at the cost of higher latency. The service enables financial analysts to reduce manual research effort by an estimated 80\%, with applications in investment research, due diligence, and competitive intelligence.
 \end{abstract}
@@ -95,10 +118,10 @@ The system was developed and tested using a dataset of European company informat
 
 \begin{itemize}
     \item \textbf{Companies}: 20 European companies across 6 countries (Germany, Spain, France, Italy, Netherlands, United Kingdom)
-    \item \textbf{Company size distribution}: 6 small companies (employees $< 100,000$), 14 large companies (employees $\geq 100,000$)
-    \item \textbf{Attributes tracked}: Company name, ticker symbol, country, city, employee count, revenue (in USD), market capitalization (in USD), CEO name, error flags, size classification
-    \item \textbf{Revenue range}: From \$2.19 billion (Adyen) to \$326.05 billion (Volkswagen Group)
-    \item \textbf{Market cap range}: From \$934.81 million (HelloFresh) to \$314.33 billion (LVMH)
+    \item \textbf{Company size distribution}: 10 small companies (market capitalization < 50 billion EUR), 10 large companies (market capitalization > 50 billion EUR)
+    \item \textbf{Attributes tracked}: Company name, ticker symbol, country, revenue (in EUR), market capitalization (in EUR), CEO name, size classification
+    \item \textbf{Revenue range}: From 1.996 billion EUR (Adyen) to 324.656 EUR (Volkswagen Group)
+    \item \textbf{Market cap range}: From 934.806 million EUR (HelloFresh) to 314.326 billion EUR (LVMH)
     \item \textbf{Geographic distribution}: Germany (8 companies), France (4 companies), United Kingdom (2 companies), Spain (2 companies), Italy (2 companies), Netherlands (2 companies)
 \end{itemize}
 
@@ -525,30 +548,179 @@ Use Case & Quality-critical applications & Speed-critical applications \\
 
 The multiagentic approach is recommended for applications where source credibility and answer completeness are critical (financial research, due diligence), while the GPT WebSearch Tool approach is suitable for speed-critical applications where moderate accuracy is acceptable.
 
-\section{Experiments}
-
 \subsection{Experimental Setup}
 
-Experiments were conducted to evaluate the three graph workflows (Metrics Graph, Table Graph, Websearch Tool Graph) on a dataset of 20 European companies. The evaluation focused on extraction accuracy, answer completeness, citation rates, and latency. The experimental design compares the multiagentic approach against the simpler GPT WebSearch Tool approach to quantify the trade-offs between quality and speed.
+The goal of the experiments is to disentangle the contribution of web search quality from the impact of increasingly complex reasoning pipelines. To this end, the evaluation is structured in two stages: first, the quality of raw web search results is assessed; second, higher-level reasoning approaches built on top of web search are evaluated.
+
+In the first stage, we compare several web search providers to measure their ability to retrieve correct and relevant information for company-related factual queries. This evaluation focuses purely on retrieval performance, independent of any language model reasoning. The objective is to understand how often correct information is present in the search results and how prominently it is ranked.
+
+In the second stage, we evaluate reasoning-based approaches that operate on top of web search results. This includes a simple \textit{GPT + Web Search} pipeline, as well as more complex multi-agent graph-based workflows (Metrics Graph, Table Graph, Websearch Tool Graph). Unlike standalone search engines, these approaches produce a final extracted answer rather than a ranked list of links. Consequently, their performance is evaluated in terms of extraction accuracy.
+
+This two-level experimental design allows us to separate limitations caused by the underlying search engines from those introduced or mitigated by reasoning and orchestration mechanisms. By first benchmarking search engines and then evaluating increasingly complex GPT-based pipelines, we quantify the trade-offs between retrieval quality, reasoning complexity, and final answer correctness.
+
+% \subsection{Experimental Parameters}
+
+% \begin{itemize}
+%     \item \textbf{Dataset}: 20 European companies from \texttt{european\_company\_metrics\_2025.csv}
+%     \item \textbf{Queries}: "Find [metric] for [company\_name]" where metric $\in$ \{revenue, market\_cap, employees, CEO\}
+%     \item \textbf{Parameters}:
+%         \begin{itemize}
+%             \item Exa search: num\_results = 15
+%             \item Hybrid retrieval: k\_init = 30, k\_final = 15, min\_credibility = 0.5, $\alpha$ = 0.5
+%             \item Max retries: 1
+%             \item Models: GPT-5 for generation/grading, GPT-4o for credibility, GPT-4o-mini for lightweight tasks
+%         \end{itemize}
+%     \item \textbf{Evaluation Metrics}: Extraction accuracy, citation rate, answer completeness, average latency, refinement trigger rate
+% \end{itemize}
+
+
 
 \subsection{Experimental Parameters}
 
+\subsubsection{Dataset and Queries}
+The experiments were conducted on a dataset of 20 European companies, sourced from \texttt{european\_company\_metrics\_2025.csv}. Queries were generated in the format ``Find [metric] for [company\_name]'', where \textit{metric} $\in$ \{revenue, gross\_margin, CEO\}.
+
+\subsubsection{Stage 1: Web Search Engines}
+In the first stage, the experiment evaluates the retrieval quality of standalone web search engines, without any language model reasoning. 
+
+For each search engines the top 10 search results were retrieved. Only the ranking and presence of correct information in the result lists were considered; no answer generation or aggregation was performed.
+
+\textbf{Stage 1 parameters:}
 \begin{itemize}
-    \item \textbf{Dataset}: 20 European companies from \texttt{european\_company\_metrics\_2025.csv}
-    \item \textbf{Queries}: "Find [metric] for [company\_name]" where metric $\in$ \{revenue, market\_cap, employees, CEO\}
-    \item \textbf{Parameters}:
-        \begin{itemize}
-            \item Exa search: num\_results = 15
-            \item Hybrid retrieval: k\_init = 30, k\_final = 15, min\_credibility = 0.5, $\alpha$ = 0.5
-            \item Max retries: 1
-            \item Models: GPT-5 for generation/grading, GPT-4o for credibility, GPT-4o-mini for lightweight tasks
-        \end{itemize}
-    \item \textbf{Evaluation Metrics}: Extraction accuracy, citation rate, answer completeness, average latency, refinement trigger rate
+    \item Search providers: Brave, DuckDuckGo, Exa, Google Search, Google Serper, Jina, SearchAPI, SerpAPI, Tavily, You. 
+    \item Number of retrieved results per query: 10
+    \item Evaluation scope: ranked result lists only
 \end{itemize}
+
+\textbf{Stage 1 evaluation metrics:}
+\begin{itemize}
+    \item \textbf{Coverage@10}: proportion of queries with at least one correct answer appearing within the top 10 results
+    \item \textbf{Ranking score}: rank position of the first relevant result
+\end{itemize}
+
+\subsubsection{Stage 2: GPT-based Reasoning Pipelines}
+The second stage evaluates reasoning-based approaches that operate on top of web search results. Two classes of pipelines were considered:
+\begin{itemize}
+    \item \textbf{GPT + Web Search (Exa-style):} a single-agent pipeline that combines GPT with web search results
+    \item \textbf{Graph-based workflows:} multi-agent pipelines including Metrics Graph, Table Graph, and Websearch Tool Graph
+\end{itemize}
+
+For graph-based workflows, hybrid retrieval was configured with $k_{\text{init}} = 30$, $k_{\text{final}} = 15$, a minimum credibility threshold of 0.5, and a weighting factor $\alpha = 0.5$. The maximum number of retries per query was set to 1.
+
+\textbf{Stage 2 evaluation metric:}
+\begin{itemize}
+    \item \textbf{Extraction accuracy}: whether the final extracted answer matches the ground truth
+\end{itemize}
+
+\textbf{Models Used}
+\begin{itemize}
+    \item GPT-5: answer generation and grading
+    \item GPT-4o: credibility scoring in graph-based workflows
+    \item GPT-4o-mini: lightweight auxiliary tasks
+\end{itemize}
+
+
+
 
 \section{Results}
 
-\textit{Detailed experimental results will be presented in the final version of this report after completion of all experiments.}
+\subsection{CEO Queries}
+
+The first stage of evaluation assessed the raw retrieval quality of ten web search engines for CEO-related queries. Each search engine was queried with "CEO of [company] in 2024" for companies in our dataset, and the top 10 results were analyzed for correctness and ranking quality.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{figures/ceo_quality.png}
+\caption{CEO queries: correctness \& coverage by search engine}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{figures/ceo_correlation.png}
+\caption{PhiK correlation, CEO}
+\end{subfigure}
+\caption{Performance comparison of search engines for CEO queries. Left: Radar chart showing coverage and score metrics for large and small companies. Right: Correlation heatmap showing similarity in result patterns across search engines.}
+\label{fig:ceo_analysis}
+\end{figure}
+
+The radar chart (Figure \ref{fig:ceo_analysis}, left) illustrates the performance differences across various search engines in terms of correctness and coverage for CEO queries. SerpAPI and SearchAPI generally perform the best, exhibiting high correctness and coverage across both large and small companies. Google Serper and Google also show strong performance but are slightly less consistent. DuckDuckGo and Brave display moderate performance, with correct CEO information being more accessible for smaller companies. Conversely, engines like You, Tavily, Jina, and Exa show slightly lower performance, particularly for the small companies.
+
+The correlation heatmap (Figure \ref{fig:ceo_analysis}, right) reveals two distinct clusters of search engines. Google Serper, Google, SearchAPI, and SerpAPI form a tightly correlated cluster, with SearchAPI and SerpAPI showing perfect correlation, indicating they likely use similar underlying data sources. Brave, DuckDuckGo, Exa, Jina, Tavily, and You form a second cluster with moderate internal correlations, where Tavily and You also show perfect correlation. The near-zero correlations between engines from different clusters indicate fundamentally different retrieval strategies or data sources.
+
+\subsection{Revenue Queries}
+
+Similar patterns emerge for revenue queries. Each search engine was queried with "revenue of [company] in 2024" for companies in our dataset, and the top 10 results were analyzed for correctness and ranking quality.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{figures/revenue_quality.png}
+\caption{Revenue queries: correctness \& coverage by search engine}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{figures/revenue_correlation.png}
+\caption{PhiK correlation, Revenue}
+\end{subfigure}
+\caption{Performance comparison of search engines for revenue queries. Left: Radar chart showing coverage and score metrics for large and small companies. Right: Correlation heatmap showing similarity in result patterns across search engines.}
+\label{fig:revenue_analysis}
+\end{figure}
+
+The radar chart (Figure \ref{fig:revenue_analysis}, left) shows that Google Serper achieves the highest performance in terms of accuracy score, while engines like Brave, Duckduckgo, Exa, Jina, Tavily and You shows the highest coverage. 
+It also should be mentioned that the seacrh of the revenue appears to be a harder task, because of that we notice the slight drop in the accuracy. Also it is seen that the gap between small and large companies is not so huge in comparison to the CEO search. This can be cause by the fact that this metrics is more stable and have lower variation in the sources.
+
+The correlation heatmap for revenue queries (Figure \ref{fig:revenue_analysis}, right) shows a similar clustering pattern. Google Serper, Google, SearchAPI, and SerpAPI form a highly correlated cluster, with SearchAPI and SerpAPI again showing perfect correlation. Tavily and You show very high correlation, while Jina correlates moderately with Tavily, You, and Exa. Brave shows moderate correlations with Jina, Tavily, and You. It tells us that if we want to use multiple search engines in the final product it might be valuable to get the best engines from different clusters to reach highest coverage.
+
+\subsection{Gross Margin Queries}
+
+Each search engine was queried with "gross margin of [company] in 2024" for companies in our dataset, and the top 10 results were analyzed for correctness and ranking quality.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{figures/gross_margin_quality.png}
+\caption{Gross margin queries: correctness \& coverage by search engine}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{figures/gross_margin_correlation.png}
+\caption{PhiK correlation, Gross Margin}
+\end{subfigure}
+\caption{Performance comparison of search engines for gross margin queries. Left: Radar chart showing coverage and score metrics for large and small companies. Right: Correlation heatmap showing similarity in result patterns across search engines.}
+\label{fig:gross_margin_analysis}
+\end{figure}
+
+The radar chart (Figure \ref{fig:gross_margin_analysis}, left) shows lower correlations comparing with the previous search patterns. This may be caused by the highest difficulty of the search task.
+
+\subsection{Comparison of Multiagentic Pipeline and GPT WebSearch Tool}
+
+The second stage of evaluation compared the performance of the multiagentic pipeline (implemented in Metrics Graph and Table Graph) against the GPT WebSearch Tool approach (implemented in Websearch Tool Graph). Both approaches were evaluated on their ability to extract accurate information for CEO, revenue, and gross margin queries, with results analyzed separately for large and small companies.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Approach} & \textbf{Size} & \textbf{CEO Accuracy} & \textbf{Revenue Accuracy} & \textbf{Gross Margin Accuracy} \\
+\midrule
+Multiagentic & Large & 0.8 & 0.6 & 0.29 \\
+Multiagentic & Small & 1.0 & 1.0 & 0.2 \\
+GPT Web-Search & Large & 1.0 & 1.0 & 0.86 \\
+GPT Web-Search & Small & 1.0 & 1.0 & 0.7 \\
+\bottomrule
+\end{tabular}
+\caption{Accuracy comparison between Multiagentic Pipeline and GPT WebSearch Tool approaches across different query types and company sizes.}
+\label{tab:approach_comparison}
+\end{table}
+
+The results (Table \ref{tab:approach_comparison}) reveal distinct performance patterns for each approach. For CEO queries, both approaches achieve perfect accuracy (1.0) for small companies, while GPT WebSearch Tool shows perfect accuracy (1.0) for large companies compared to 0.8 accuracy for the multiagentic pipeline. For revenue queries, GPT WebSearch Tool maintains perfect accuracy (1.0) for both large and small companies, while the multiagentic pipeline achieves perfect accuracy (1.0) for small companies but only 0.6 accuracy for large companies. The most significant difference emerges in gross margin queries: GPT WebSearch Tool demonstrates 0.86 accuracy for large companies and 0.7 accuracy for small companies, while the multiagentic pipeline shows 0.29 accuracy for large companies and 0.2 accuracy for small companies.
+
+These results suggest that GPT WebSearch Tool generally outperforms the multiagentic pipeline in extraction accuracy, particularly for revenue and gross margin queries. However, the multiagentic pipeline offers advantages in quality control mechanisms such as explicit credibility scoring, hybrid retrieval, and iterative refinement, which may be valuable for applications where source verification and answer completeness are prioritized over raw extraction accuracy. The performance gap is most pronounced for gross margin queries, which appear to be the most challenging task for both approaches, with the multiagentic pipeline struggling more significantly in this domain.
 
 \section{Conclusions}
 
@@ -611,7 +783,7 @@ The service design enables several practical applications:
 
 \subsection{Final Assessment}
 
-The multiagentic pipeline successfully transforms financial research from a manual, time-intensive process into an automated service that maintains high standards for source credibility and answer completeness. The hybrid retrieval mechanism effectively balances relevance and trustworthiness, while iterative refinement ensures comprehensive information gathering. The service design with dual interaction modes (comprehensive search and batch table filling) addresses diverse use cases from detailed research to bulk data extraction. However, experimental evaluation revealed that the websearch tool approach achieved higher extraction accuracy compared to the custom multiagentic pipeline, demonstrating that more sophisticated architectures do not always translate to better performance on accuracy metrics.
+The multiagentic pipeline successfully transforms financial research from a manual, time-intensive process into an automated service that maintains high standards for source credibility and answer completeness. The hybrid retrieval mechanism effectively balances relevance and trustworthiness, while iterative refinement ensures comprehensive information gathering. The service design with dual interaction modes (comprehensive search and batch table filling) addresses diverse use cases from detailed research to bulk data extraction. However, experimental evaluation revealed that the websearch tool approach achieved higher extraction accuracy compared to the custom multiagentic pipeline.
 
 Despite the accuracy advantage of the websearch tool approach, the custom multiagentic architecture offers significant strategic benefits that extend beyond raw accuracy metrics. First, the custom approach provides full control over document retrieval and processing pipelines, enabling integration of proprietary and closed data sources (internal databases, subscription services, confidential documents) that cannot be accessed through websearch tools. In websearch tool-based solutions, there is no control over which pages are scraped, and custom or closed data cannot be integrated. Second, websearch tools are not universally available across all LLM providers, and for regulated industries such as banking and financial services, using external cloud-based LLMs like GPT may violate compliance requirements. The custom multiagentic architecture can be deployed with self-hosted LLMs, ensuring data privacy and regulatory compliance while maintaining the same sophisticated workflow capabilities. Third, the modular agentic flow enables unlimited customization possibilities: specialized agents can be added for domain-specific tasks, custom retrieval strategies can be implemented, and the entire pipeline can be adapted to specific organizational needs. Finally, a hybrid approach is possible: combining GPT with websearch tool for initial information gathering (leveraging its accuracy advantage), followed by the multiagentic workflow for credibility assessment, hybrid retrieval, and iterative refinement to prevent hallucinations and ensure source verification. This hybrid strategy leverages the accuracy and speed of websearch tools while maintaining the quality control and hallucination prevention mechanisms of the multiagentic pipeline, offering the best of both approaches.
 

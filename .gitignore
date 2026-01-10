@@ -72,4 +72,5 @@ streamlit_utils/data/table_format
 
 testing_notebooks/data
 *.env
-app/testing_notebooks/data
+app/testing_notebooks/data_old
+app/testing_notebooks/archive
