@@ -1,0 +1,556 @@
+\documentclass[aspectratio=169,10pt]{beamer}
+
+% Modern theme: Copenhagen with custom colors
+\usetheme{Copenhagen}
+\usecolortheme{seahorse}
+
+% Modern color scheme - professional blue/orange
+\definecolor{PrimaryBlue}{RGB}{0,102,204}
+\definecolor{AccentOrange}{RGB}{255,102,0}
+\definecolor{DarkGray}{RGB}{51,51,51}
+\definecolor{LightGray}{RGB}{245,245,245}
+
+% Apply modern colors
+\setbeamercolor{structure}{fg=PrimaryBlue}
+\setbeamercolor{block title}{bg=PrimaryBlue,fg=white}
+\setbeamercolor{block body}{bg=LightGray,fg=DarkGray}
+\setbeamercolor{section in toc}{fg=PrimaryBlue}
+\setbeamercolor{subsection in toc}{fg=AccentOrange}
+\setbeamercolor{frametitle}{bg=PrimaryBlue,fg=white}
+\setbeamercolor{title}{fg=PrimaryBlue}
+
+% Modern fonts
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+\usepackage{graphicx}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=PrimaryBlue,urlcolor=AccentOrange}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning,decorations.pathreplacing}
+
+% Modern block styling with rounded corners and shadows
+\setbeamertemplate{blocks}[rounded][shadow=true]
+
+% Remove navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
+% Remove section navigation from header
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+    \usebeamerfont{author in head/foot}\insertshortauthor
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertshorttitle
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
+    \usebeamerfont{date in head/foot}\insertshortdate{}\hspace*{2em}
+    \insertframenumber{} / \inserttotalframenumber\hspace*{2ex} 
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+
+% Modern section page
+\AtBeginSection[]{
+  \begin{frame}[plain]
+    \vfill
+    \centering
+    \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+      \usebeamerfont{title}\insertsectionhead\par%
+    \end{beamercolorbox}
+    \vfill
+  \end{frame}
+}
+
+% Custom itemize style
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{enumerate items}[default]
+
+% Title page
+\title{Multiagentic Pipeline for Document Parsing and Output Generation}
+\subtitle{A Quantitative Analysis of Financial Document Processing}
+\author{Pavel Shumkovskii}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}{Overview}
+\vspace{0.5cm}
+\begin{itemize}
+    \item[$\triangleright$] \textbf{Problem}: Manual financial research is time-consuming (8-10 hours) and error-prone
+    \vspace{0.2cm}
+    \item[$\triangleright$] \textbf{Solution}: Multiagentic pipeline with 9 specialized agents
+    \vspace{0.2cm}
+    \item[$\triangleright$] \textbf{Key Innovation}: Hybrid retrieval + iterative refinement
+    \vspace{0.2cm}
+    \item[$\triangleright$] \textbf{Impact}: \textcolor{AccentOrange}{80\% reduction} in manual research effort
+    \vspace{0.2cm}
+    \item[$\triangleright$] \textbf{Application}: Financial research automation service
+\end{itemize}
+\end{frame}
+
+\section{Introduction}
+
+\begin{frame}{Business Problem}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{Challenges:}
+\begin{itemize}
+    \item Time consumption: 8-10 hours for 100 extractions
+    \item Source credibility verification
+    \item Information synthesis from multiple sources
+    \item Scalability for batch operations
+    \item Traceability and citations
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{Solution Goals:}
+\begin{itemize}
+    \item Automate company metric extraction
+    \item Ensure source credibility ($\geq 0.5$)
+    \item Generate answers with citations
+    \item Implement iterative refinement
+    \item Target: $< 30$ seconds per query
+\end{itemize}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Dataset}
+\begin{itemize}
+    \item \textbf{20 European companies} across 6 countries
+    \item \textbf{Size distribution}: 10 small ($<$ 50B EUR), 10 large ($>$ 50B EUR)
+    \item \textbf{Metrics}: Revenue, market cap, CEO, employees
+    \item \textbf{Revenue range}: 1.996B - 324.656B EUR
+    \item \textbf{Market cap range}: 934.8M - 314.3B EUR
+    \item \textbf{Countries}: Germany (8), France (4), UK (2), Spain (2), Italy (2), Netherlands (2)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Key Innovations}
+\begin{enumerate}
+    \item \textbf{Web Search}: Automated retrieval via Exa Search API
+    \item \textbf{Credibility Assessment}: Scoring (0.0-1.0) based on domain reliability, author expertise, recency
+    \item \textbf{Hybrid Retrieval}: Combines semantic similarity + credibility ($\alpha = 0.5$)
+    \item \textbf{Answer Generation}: Structured outputs with explicit citations
+    \item \textbf{Quality Control}: Iterative refinement loops for completeness
+\end{enumerate}
+\end{frame}
+
+\section{Methodologies}
+
+\begin{frame}{System Architecture}
+\begin{center}
+\Large \textcolor{PrimaryBlue}{\textbf{Three-Layer Architecture}}
+\end{center}
+
+\vspace{0.8cm}
+
+\begin{enumerate}
+    \item[\textcolor{PrimaryBlue}{1.}] \textbf{Graph Layer}: 3 LangGraph workflows
+    \begin{itemize}
+        \item Metrics Graph (general Q\&A)
+        \item Table Graph (structured extraction)
+        \item Websearch Tool Graph (simplified)
+    \end{itemize}
+    
+    \vspace{0.3cm}
+    \item[\textcolor{PrimaryBlue}{2.}] \textbf{Agent Layer}: 9 specialized agents
+    \begin{itemize}
+        \item Models: GPT-4o-mini, GPT-4o, GPT-5, GPT-5 Responses
+    \end{itemize}
+    
+    \vspace{0.3cm}
+    \item[\textcolor{PrimaryBlue}{3.}] \textbf{Utility Layer}: Parsing, retrieval, credibility scoring
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Workflow Architecture}
+\begin{columns}
+\column{0.55\textwidth}
+\begin{center}
+\includegraphics[width=0.65\textwidth]{figures/websearch_graph.png}
+\end{center}
+
+\column{0.45\textwidth}
+\textbf{Iterative Refinement Loop:}
+\begin{enumerate}
+    \item Web search $\rightarrow$ Credibility scoring
+    \item Hybrid retrieval $\rightarrow$ Answer generation
+    \item Full answer check $\rightarrow$ Query refinement (if needed)
+    \item Max 1 retry
+\end{enumerate}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Three Graph Variants}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Feature} & \textbf{Metrics} & \textbf{Table} & \textbf{Websearch Tool} \\
+\midrule
+Hybrid Retrieval & Yes & Yes & No \\
+Credibility Scoring & Yes & Yes & No \\
+Iterative Refinement & Yes & Yes & No \\
+Structured Output & No & Yes & Yes \\
+Latency & High & High & Medium \\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{frame}
+
+\begin{frame}{Specialized Agents}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{1. Retrieval Grader} (GPT-4o-mini)
+\begin{itemize}
+    \item Binary relevance scoring
+\end{itemize}
+
+\textbf{2. RAG Chain Agent} (GPT-5)
+\begin{itemize}
+    \item Text generation with citations
+\end{itemize}
+
+\textbf{3. Company Metric Agent} (GPT-5)
+\begin{itemize}
+    \item Structured metric extraction
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{4. Full Information Grader} (GPT-5)
+\begin{itemize}
+    \item Answer completeness check
+\end{itemize}
+
+\textbf{5. Question Rewriter} (GPT-5)
+\begin{itemize}
+    \item Query refinement
+\end{itemize}
+
+\textbf{6. Web Credibility Grader} (GPT-4o)
+\begin{itemize}
+    \item Credibility scoring (0.0-1.0)
+\end{itemize}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Hybrid Retrieval Algorithm}
+\textbf{Stage 1: Initial Retrieval}
+\begin{itemize}
+    \item Retrieve $k_{\text{init}} = 30$ documents via semantic similarity
+    \item Embeddings: \texttt{text-embedding-3-small}
+\end{itemize}
+
+\textbf{Stage 2: Filtering and Ranking}
+\begin{itemize}
+    \item Filter: credibility $\geq 0.5$
+    \item Hybrid score:
+\end{itemize}
+
+\[
+\text{Hybrid Score} = (1 - \alpha) \cdot \text{Credibility} + \alpha \cdot (1 - \text{Similarity Distance})
+\]
+
+Where $\alpha = 0.5$ (equal weight)
+
+\textbf{Stage 3: Final Selection}
+\begin{itemize}
+    \item Rank by hybrid score, select top $k_{\text{final}} = 15$
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Credibility Scoring}
+\textbf{Parallel Processing}: \texttt{asyncio.gather} for all documents
+
+\textbf{Scoring Criteria} (0.0-1.0 scale):
+\begin{itemize}
+    \item \textbf{Domain reliability}: Official sites, financial news $>$ blogs, forums
+    \item \textbf{Author expertise}: Experts, executives $>$ anonymous
+    \item \textbf{Content recency}: Recent content preferred (with exceptions for authoritative sources)
+\end{itemize}
+
+\textbf{Filtering}: Documents with score $< 0.5$ are excluded
+\end{frame}
+
+\begin{frame}{Iterative Refinement}
+\begin{enumerate}
+    \item Generate initial answer
+    \item Assess completeness (Full Information Grader)
+    \item If incomplete: extract follow-up question
+    \item Rewrite query (Question Rewriter)
+    \item Perform new web search
+    \item Re-generate answer
+    \item Re-assess completeness
+    \item Terminate if sufficient or retry count $\geq 1$
+\end{enumerate}
+
+\textbf{Max Retries}: 1 (balance quality vs. latency)
+\end{frame}
+
+\section{Service Design}
+
+\begin{frame}{User Interface Modes}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{Full Search Mode}
+\begin{itemize}
+    \item Natural language queries
+    \item Comprehensive Q\&A
+    \item Explicit citations
+    \item Iterative refinement
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{Table Filling Mode}
+\begin{itemize}
+    \item Batch processing
+    \item Excel upload/manual input
+    \item Asynchronous processing
+    \item Structured outputs
+    \item 40 cells $\rightarrow$ parallel execution
+\end{itemize}
+\end{columns}
+
+\vspace{0.5cm}
+\begin{block}{Impact}
+\centering
+\Large \textcolor{AccentOrange}{\textbf{8-10 hours $\rightarrow$ 25-30 minutes}} \\
+\vspace{0.2cm}
+\large \textbf{80\% reduction} in manual research effort
+\end{block}
+\end{frame}
+
+\begin{frame}{Real-World Use Cases}
+\begin{enumerate}
+    \item \textbf{Financial Research Firms}
+    \begin{itemize}
+        \item Sector analysis: 20 companies $\times$ 5 metrics = 100 extractions
+        \item Automated table population
+    \end{itemize}
+    
+    \item \textbf{Due Diligence}
+    \begin{itemize}
+        \item M\&A verification
+        \item Credibility scoring prioritizes official sources
+    \end{itemize}
+    
+    \item \textbf{Competitive Intelligence}
+    \begin{itemize}
+        \item Automated dashboard updates
+        \item Structured outputs for BI integration
+    \end{itemize}
+\end{enumerate}
+\end{frame}
+
+\section{Experimental Setup}
+
+\begin{frame}{Two-Stage Evaluation}
+\textbf{Stage 1: Web Search Engines}
+\begin{itemize}
+    \item 10 search providers: Brave, DuckDuckGo, Exa, Google, Google Serper, Jina, SearchAPI, SerpAPI, Tavily, You
+    \item Top 10 results per query
+    \item Metrics: Coverage@10, Ranking score
+    \item Queries: CEO, Revenue, Gross Margin
+\end{itemize}
+
+\textbf{Stage 2: GPT-based Pipelines}
+\begin{itemize}
+    \item Multiagentic Pipeline (Metrics/Table Graph)
+    \item GPT WebSearch Tool (Websearch Tool Graph)
+    \item Metric: Extraction accuracy
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Experimental Parameters}
+\textbf{Dataset}: 20 European companies
+
+\textbf{Queries}: "Find [metric] for [company]" where metric $\in$ \{revenue, gross\_margin, CEO\}
+
+\textbf{Graph Parameters}:
+\begin{itemize}
+    \item $k_{\text{init}} = 30$, $k_{\text{final}} = 15$
+    \item Min credibility = 0.5, $\alpha = 0.5$
+    \item Max retries = 1
+\end{itemize}
+
+\textbf{Models}:
+\begin{itemize}
+    \item GPT-5: generation, grading
+    \item GPT-4o: credibility scoring
+    \item GPT-4o-mini: lightweight tasks
+\end{itemize}
+\end{frame}
+
+\section{Results}
+
+\begin{frame}{Search Engine Performance: CEO Queries}
+\begin{columns}
+\column{0.5\textwidth}
+\includegraphics[width=\textwidth]{figures/ceo_quality.png}
+
+\column{0.5\textwidth}
+\includegraphics[width=\textwidth]{figures/ceo_correlation.png}
+\end{columns}
+
+\textbf{Key Findings}:
+\begin{itemize}
+    \item SerpAPI, SearchAPI: best performance
+    \item Two clusters: Google/SerpAPI/SearchAPI vs. Brave/DuckDuckGo/Exa/Jina/Tavily/You
+    \item Perfect correlation: SearchAPI-SerpAPI, Tavily-You
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Search Engine Performance: Revenue Queries}
+\begin{columns}
+\column{0.5\textwidth}
+\includegraphics[width=\textwidth]{figures/revenue_quality.png}
+
+\column{0.5\textwidth}
+\includegraphics[width=\textwidth]{figures/revenue_correlation.png}
+\end{columns}
+
+\textbf{Key Findings}:
+\begin{itemize}
+    \item Google Serper: highest accuracy
+    \item Brave, DuckDuckGo, Exa, Jina, Tavily, You: highest coverage
+    \item Revenue search harder than CEO (lower accuracy)
+    \item Similar clustering pattern as CEO queries
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Search Engine Performance: Gross Margin}
+\begin{columns}
+\column{0.5\textwidth}
+\includegraphics[width=\textwidth]{figures/gross_margin_quality.png}
+
+\column{0.5\textwidth}
+\includegraphics[width=\textwidth]{figures/gross_margin_correlation.png}
+\end{columns}
+
+\textbf{Key Findings}:
+\begin{itemize}
+    \item Most challenging task
+    \item Lower correlations across engines
+    \item Highest difficulty for both approaches
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Pipeline Comparison: Accuracy}
+\begin{table}[h]
+\centering
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Approach} & \textbf{Size} & \textbf{CEO} & \textbf{Revenue} & \textbf{Gross Margin} \\
+\midrule
+Multiagentic & Large & 0.8 & 0.6 & 0.29 \\
+Multiagentic & Small & 1.0 & 1.0 & 0.2 \\
+GPT Web-Search & Large & 1.0 & 1.0 & 0.86 \\
+GPT Web-Search & Small & 1.0 & 1.0 & 0.7 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key Findings}:
+\begin{itemize}
+    \item GPT WebSearch Tool: higher accuracy overall
+    \item Multiagentic: better for small companies (CEO, Revenue)
+    \item Gross margin: most challenging (both struggle, GPT WebSearch better)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Approach Comparison}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Feature} & \textbf{Multiagentic} & \textbf{GPT WebSearch} \\
+\midrule
+Architecture & 9 agents & Single agent \\
+Credibility Scoring & Explicit (0.0-1.0) & Implicit \\
+Hybrid Retrieval & Yes & No \\
+Iterative Refinement & Yes (max 1) & No \\
+Extraction Accuracy & Moderate & Higher \\
+Citation Rate & Complete & High \\
+Latency & Higher & Lower \\
+Use Case & Quality-critical & Speed-critical \\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{frame}
+
+\section{Conclusions}
+
+
+\begin{frame}{Trade-offs}
+\textbf{Multiagentic Pipeline}:
+\begin{itemize}
+    \item \textcolor{green}{Pros}: Explicit credibility control, quality assurance, transparency, specialized agents, private document usage option
+    \item \textcolor{red}{Cons}: Higher latency, more complex, higher API costs
+\end{itemize}
+
+\textbf{GPT WebSearch Tool}:
+\begin{itemize}
+    \item \textcolor{green}{Pros}: Lower latency, simpler, faster, lower costs
+    \item \textcolor{red}{Cons}: No explicit credibility filtering, no iterative refinement, lower citation rates, customization not available
+\end{itemize}
+
+\textbf{Recommendation}: Multiagentic for quality-critical applications; GPT WebSearch for speed-critical applications
+\end{frame}
+
+\begin{frame}{Strategic Benefits of Multiagentic Approach}
+Despite lower accuracy, custom architecture offers:
+\begin{enumerate}
+    \item \textbf{Full Control}: Integration of proprietary/closed data sources
+    \item \textbf{Compliance}: Self-hosted LLMs for regulated industries
+    \item \textbf{Customization}: Unlimited modular agentic flow adaptation
+    \item \textbf{Hybrid Strategy}: Combine GPT WebSearch + multiagentic workflow
+    \begin{itemize}
+        \item WebSearch for initial gathering (accuracy advantage)
+        \item Multiagentic for credibility assessment and refinement
+    \end{itemize}
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Future Work}
+\begin{itemize}
+    \item Reduce latency: parallel processing, caching
+    \item Adaptive retry limits based on query complexity
+    \item Persistent vector stores with caching
+    \item Integration with proprietary databases and financial APIs
+    \item Improved webpage scraping (full content, tables)
+    \item Domain-specific chunking strategies
+    \item Deep research agent with iterative tool chaining
+\end{itemize}
+\end{frame}
+
+\begin{frame}[plain]
+\vfill
+\begin{center}
+\Huge \textcolor{PrimaryBlue}{\textbf{Thank You}}
+
+\vspace{1cm}
+
+\Large \textbf{Questions?}
+
+\vspace{1.5cm}
+
+\large
+\href{https://github.com/pavelhym/Bicocca_DS_2026}{\textcolor{AccentOrange}{\textbf{github.com/pavelhym/Bicocca\_DS\_2026}}}
+\end{center}
+\vfill
+\end{frame}
+
+\end{document}

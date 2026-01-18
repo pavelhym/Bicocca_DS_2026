@@ -128,7 +128,7 @@ if selected == "Full search":
 
     with st.expander("What is full search?"):
         st.info(
-            "Full search ALWAYS combines web search and local storage. It is designed to return a comprehensive answer to a question, but takes longer to complete."
+            "It is designed to return a comprehensive answer to a question, using web search and local storage documents (if needed)."
         )
 
     config = {
